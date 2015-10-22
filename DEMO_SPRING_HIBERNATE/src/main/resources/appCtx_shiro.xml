@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="
+		http://www.springframework.org/schema/beans
+		http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context
+		http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/aop
+		http://www.springframework.org/schema/aop/spring-aop.xsd
+		http://www.springframework.org/schema/tx
+		http://www.springframework.org/schema/tx/spring-tx.xsd">
+	<!-- 項目自定义的Realm -->
+	<bean id="shiroDbRealm" class="com.yhxia.ssh.service.security.ShiroDbRealm"></bean>
+	<!-- 用户授权信息Cache, 采用EhCache -->
+	<bean id="shiroEhcacheManager" class="org.apache.shiro.cache.ehcache.EhCacheManager">
+		<property name="cacheManagerConfigFile" value="classpath:ehcache-shiro.xml" />
+	</bean>
+
+	<bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+		<!--设置自定义realm -->
+		<property name="realm" ref="shiroDbRealm" />
+		<property name="cacheManager" ref="shiroEhcacheManager" />
+	</bean>
+
+	<!-- Shiro Filter -->
+	<bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+		<property name="securityManager" ref="securityManager" />
+		<property name="loginUrl" value="/" />
+		<property name="successUrl" value="/system/main" />
+		<property name="unauthorizedUrl" value="/system/error" />
+		<property name="filterChainDefinitions">
+			<value>
+				/TecTestProject/user_action/login = anon
+				/TecTestProject/validateCode = anon
+				/TecTestProject/** = authc
+			</value>
+		</property>
+	</bean>
+
+	<!-- 启动组件扫描，排除@Controller组件，该组件由SpringMVC配置文件扫描 -->
+	<context:component-scan base-package="com.yhxia.ssh.service.security" />
+	<!-- 启动组件扫描，排除@Controller组件，该组件由SpringMVC配置文件扫描 -->
+	<context:component-scan base-package="com.yhxia.ssh.controller">
+		<context:exclude-filter type="annotation"
+			expression="org.springframework.stereotype.Controller" />
+	</context:component-scan>
+</beans>

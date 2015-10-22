@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="
+	http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans.xsd
+	http://www.springframework.org/schema/context
+	http://www.springframework.org/schema/context/spring-context.xsd
+	http://www.springframework.org/schema/aop
+	http://www.springframework.org/schema/aop/spring-aop.xsd
+	http://www.springframework.org/schema/tx
+	http://www.springframework.org/schema/tx/spring-tx.xsd">
+	<!-- 引入属性文件 -->
+	<context:property-placeholder location="classpath*:jdbc_${env}.properties"
+		ignore-unresolvable="true" />
+	<context:property-placeholder location="classpath*:imp_${env}.properties"
+		ignore-unresolvable="true" />
+
+	<!-- 使Spring关注Annotation -->
+	<context:annotation-config />
+	<aop:aspectj-autoproxy />
+	<!-- 自动扫描dao和service包(自动注入).并扫描entity包，供相关entity操作.controler包放到spring_rest.xml中 -->
+	<context:component-scan
+		base-package="org.ihsp.data.dao.impl,
+		org.ihsp.data.dao.base.impl,
+		org.ihsp.data.service.impl,
+		org.ihsp.data.component.impl,
+		org.ihsp.data.entity" />
+	<!-- data source import -->
+	<import resource="classpath*:/appCtx_dataSource_multi.xml" />
+	<!-- cache enable -->
+	<!-- <import resource="classpath*:/appCtx_ehcacheAnno.xml" /> -->
+	<!--tibco jms enable -->
+	<!-- <import resource="classpath*:/appCtx_tibcoJms.xml" /> -->
+	<import resource="classpath*:/appCtx_activemq.xml" />
+	<!-- shiro enable -->
+	<!-- <import resource="classpath*:/appCtx_shiro.xml" /> -->
+	<!-- <import resource="classpath*:/appCtx_mina.xml" /> -->
+
+	<bean id="multipartResolver"
+		class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<property name="defaultEncoding" value="UTF-8" />
+		<!-- 100MB -->
+		<property name="maxUploadSize" value="838860800" />
+	</bean>
+
+	<!-- spring thread pool -->
+	<bean id="taskExecutor"
+		class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
+		<property name="corePoolSize" value="200" />
+		<property name="maxPoolSize" value="200" />
+		<property name="queueCapacity" value="100000" />
+		<property name="keepAliveSeconds" value="100" />
+		<property name="rejectedExecutionHandler">
+			<bean class="java.util.concurrent.ThreadPoolExecutor$AbortPolicy" />
+		</property>
+	</bean>
+</beans>

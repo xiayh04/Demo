@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="
+		http://www.springframework.org/schema/beans
+		http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context
+		http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/aop
+		http://www.springframework.org/schema/aop/spring-aop.xsd
+		http://www.springframework.org/schema/tx
+		http://www.springframework.org/schema/tx/spring-tx.xsd">
+	<!-- C3P0 数据源 -->
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+		<property name="driverClass" value="${jdbc.driver_class}" />
+		<property name="jdbcUrl" value="${jdbc.url}" />
+		<property name="user" value="${jdbc.username}" />
+		<property name="password" value="${jdbc.password}" />
+		<property name="initialPoolSize" value="${jdbc.initialPoolSize}" />
+		<property name="minPoolSize" value="${jdbc.minPoolSize}" />
+		<property name="maxPoolSize" value="${jdbc.maxPoolSize}" />		
+		<property name="acquireIncrement" value="${jdbc.acquireIncrement}" />
+		
+		<property name="preferredTestQuery" value="${jdbc.preferredTestQuery}" />
+		<property name="acquireRetryAttempts" value="${jdbc.acquireRetryAttempts}" />
+		<property name="acquireRetryDelay" value="${jdbc.acquireRetryDelay}" />
+		<property name="checkoutTimeout" value="${jdbc.checkoutTimeout}" />
+		<property name="automaticTestTable" value="${jdbc.automaticTestTable}" />
+		<property name="testConnectionOnCheckin" value="${jdbc.testConnectionOnCheckin}" />
+		<property name="idleConnectionTestPeriod" value="${jdbc.idleConnectionTestPeriod}" />
+	</bean>
+
+	<!-- SessionFactory -->
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="packagesToScan" value="com.yhxia.ssh.entity" />
+		<!-- session factory for entity -->
+		<property name="useTransactionAwareDataSource" value="true" />
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">${hibernate.dialect}</prop>
+				<prop key="hibernate.show_sql">${hibernate.show_sql}</prop>
+				<prop key="hibernate.format_sql">${hibernate.format_sql}</prop>
+				<prop key="hibernate.temp.use_jdbc_metadata_defaults">${hibernate.temp.use_jdbc_metadata_defaults}</prop>
+				<prop key="hibernate.hbm2ddl.auto">${hibernate.hbm2ddl.auto}</prop>
+				<!-- <prop key="hibernate.cache.provider_class">${hibernate.cache.provider_class}</prop> 
+					<prop key="hibernate.cache.use_query_cache">${hibernate.cache.use_query_cache}</prop> 
+					<prop key="hibernate.cache.use_second_level_cache">${hibernate.cache.use_second_level_cache}</prop> -->
+				<prop key="hibernate.connection.autocommit">false</prop>
+				<prop key="hibernate.current_session_context_class">thread</prop>
+			</props>
+		</property>
+	</bean>
+	<!-- datasource for mysql end -->
+
+	<!-- 配置事务管理范围, 并使用annotation定义事务 -->
+	<bean id="transactionManager"
+		class="org.springframework.orm.hibernate3.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory" /><!-- hibernate 
+			session included -->
+		<property name="dataSource" ref="dataSource" /><!-- spring jdbc 
+			included -->
+	</bean>
+
+	<!-- setup transation advice -->
+	<tx:advice id="txAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<tx:method name="del*" propagation="REQUIRED" />
+			<tx:method name="remove*" propagation="REQUIRED" />
+			<tx:method name="save*" propagation="REQUIRED" />
+			<tx:method name="parse*" propagation="REQUIRED" />
+			<tx:method name="add*" propagation="REQUIRED" />
+			<tx:method name="create*" propagation="REQUIRED" />
+			<tx:method name="update*" propagation="REQUIRED" />
+			<tx:method name="import*" propagation="REQUIRED" />
+			<tx:method name="validate*" propagation="REQUIRED" />
+			<tx:method name="imme*" propagation="REQUIRES_NEW" />
+			<tx:method name="get*" read-only="true" />
+			<tx:method name="find*" read-only="true" />
+			<tx:method name="*" />
+		</tx:attributes>
+	</tx:advice>
+
+	<!-- setup transation pointcut -->
+	<aop:config>
+		<aop:pointcut id="serviceOperation"
+			expression="execution(* com.yhxia.ssh.service..*.*(..))" />
+		<aop:advisor pointcut-ref="serviceOperation" advice-ref="txAdvice" />
+	</aop:config>
+
+	<tx:annotation-driven transaction-manager="transactionManager" />
+
+	<!-- hibernate template -->
+	<bean id="hibernateTemplate" class="org.springframework.orm.hibernate3.HibernateTemplate">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+
+</beans>

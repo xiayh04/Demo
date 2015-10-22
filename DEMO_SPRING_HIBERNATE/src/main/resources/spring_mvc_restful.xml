@@ -1,0 +1,73 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd">
+
+
+	<!-- 自动搜索@Controller标注的类，包括其下面的子包 -->
+	<!-- <context:component-scan base-package="com.yhxia.ssh.controller" /> -->
+	<!-- 自动扫描且只扫描@Controller -->
+	<context:component-scan base-package="com.yhxia.ssh.controller"
+		use-default-filters="false">
+		<context:include-filter type="annotation"
+			expression="org.springframework.stereotype.Controller" />
+		<context:include-filter type="annotation"
+			expression="org.springframework.web.bind.annotation.ControllerAdvice" />
+	</context:component-scan>
+
+	<mvc:annotation-driven
+		content-negotiation-manager="contentNegotiationManager">
+		<mvc:message-converters register-defaults="true">
+			<!-- 将StringHttpMessageConverter的默认编码设为UTF-8 -->
+			<bean class="org.springframework.http.converter.StringHttpMessageConverter">
+				<constructor-arg value="UTF-8" />
+			</bean>
+			<!-- 将Jackson2HttpMessageConverter的默认格式化输出设为true -->
+			<bean
+				class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+				<property name="prettyPrint" value="true" />
+			</bean>
+		</mvc:message-converters>
+	</mvc:annotation-driven>
+
+	<!-- <mvc:interceptors>
+		<bean class="com.yhxia.ssh.controller.ControllerInterceptor" />
+	</mvc:interceptors> -->
+
+	<!-- REST中根据URL后缀自动判定Content-Type及相应的View -->
+	<!-- 需要完善，因为这种转换不能对List 进行转换所以需要实现一个封装类 暂时不使用xml，以后可以参考springside项目 -->
+	<bean id="contentNegotiationManager"
+		class="org.springframework.web.accept.ContentNegotiationManagerFactoryBean">
+		<property name="mediaTypes">
+			<map>
+				<!-- <entry key="xml" value="application/xml" /> -->
+				<entry key="json" value="application/json" />
+			</map>
+		</property>
+	</bean>
+
+
+	<!-- 开启Shiro注解的Spring配置方式的beans。在lifecycleBeanPostProcessor之后运行 -->
+	<bean
+		class="org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator"
+		depends-on="lifecycleBeanPostProcessor" />
+	<bean
+		class="org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor">
+		<property name="securityManager" ref="securityManager" />
+	</bean>
+
+	<bean id="lifecycleBeanPostProcessor" class="org.apache.shiro.spring.LifecycleBeanPostProcessor" />
+
+	<!-- shiro为集成spring -->
+	<bean
+		class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver">
+		<property name="exceptionMappings">
+			<props>
+				<prop key="org.apache.shiro.authz.UnauthorizedException">/system/error</prop>
+			</props>
+		</property>
+	</bean>
+
+</beans>

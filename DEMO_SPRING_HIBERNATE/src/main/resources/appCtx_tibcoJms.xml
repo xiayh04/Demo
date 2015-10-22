@@ -1,0 +1,72 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:jee="http://www.springframework.org/schema/jee"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-3.0.xsd 
+	http://www.springframework.org/schema/context
+	http://www.springframework.org/schema/context/spring-context-3.0.xsd
+	http://www.springframework.org/schema/aop 
+	http://www.springframework.org/schema/aop/spring-aop-3.0.xsd 
+	http://www.springframework.org/schema/jee 
+	http://www.springframework.org/schema/jee/spring-jee-3.0.xsd 
+	http://www.springframework.org/schema/util  
+	http://www.springframework.org/schema/util/spring-util-3.1.xsd">
+
+	<!-- 引入属性文件 -->
+	<context:property-placeholder location="classpath:jms.properties"
+		ignore-unresolvable="true" />
+
+	<context:component-scan base-package="com.yhxia.ssh.service.jms" />
+	<bean id="jndiTemplate" class="org.springframework.jndi.JndiTemplate">
+		<property name="environment">
+			<props>
+				<prop key="java.naming.factory.initial">${etd.sending.java.naming.factory.initial}</prop>
+				<prop key="java.naming.provider.url">${etd.sending.java.naming.provider.url}</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="jndiConnectionFactory" class="org.springframework.jndi.JndiObjectFactoryBean">
+		<property name="jndiTemplate" ref="jndiTemplate" />
+		<property name="jndiName" value="${etd.sending.topic.conn.factory}" />
+	</bean>
+
+	<bean id="authorityConnectionFactory"
+		class="org.springframework.jms.connection.UserCredentialsConnectionFactoryAdapter">
+		<property name="targetConnectionFactory" ref="jndiConnectionFactory" />
+		<property name="username" value="${java.naming.security.principal}" />
+		<property name="password" value="${java.naming.security.credentials}" />
+	</bean>
+	<bean id="myConnectionFactory"
+		class="org.springframework.jms.connection.CachingConnectionFactory">
+		<property name="targetConnectionFactory">
+			<ref bean="authorityConnectionFactory" />
+		</property>
+	</bean>
+	<bean id="myTopic" class="org.springframework.jndi.JndiObjectFactoryBean">
+		<property name="jndiTemplate" ref="jndiTemplate" />
+		<property name="jndiName" value="${etd.sending.topic}" />
+	</bean>
+
+	<bean id="consumerMessageListener" class="com.yhxia.ssh.service.jms.ConsumerMessageListener" />
+
+	<bean id="jmsDestinationResolver"
+		class="org.springframework.jms.support.destination.JndiDestinationResolver">
+		<property name="jndiTemplate" ref="jndiTemplate" />
+		<property name="cache" value="true" />
+	</bean>
+	<bean id="jmsTemplate" class="org.springframework.jms.core.JmsTemplate">
+		<property name="connectionFactory" ref="myConnectionFactory" />
+		<property name="destinationResolver" ref="jmsDestinationResolver" />
+		<property name="defaultDestination" ref="myTopic" />
+	</bean>
+
+	<bean id="jmsContainer"
+		class="org.springframework.jms.listener.DefaultMessageListenerContainer">
+		<property name="concurrentConsumers" value="1" />
+		<property name="connectionFactory" ref="myConnectionFactory" />
+		<property name="destination" ref="myTopic" />
+		<property name="messageListener" ref="consumerMessageListener" />
+		<property name="subscriptionDurable" value="true" />
+	</bean>
+</beans>
